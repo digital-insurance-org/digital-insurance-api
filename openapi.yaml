@@ -1,0 +1,330 @@
+openapi: 3.0.3
+info:
+  title: Digital Insurance API
+  version: 1.0.0
+  description: >-
+    Customer-facing API for the Digital Insurance platform. Handles quotes,
+    claims, and customers; binds and prices policies through the internal Policy
+    API; and charges premiums and fetches payment receipts through the internal
+    Payment API.
+servers:
+  - url: https://api.digitalinsurance.dev
+    description: Production
+paths:
+  /v1/quotes:
+    post:
+      operationId: createQuote
+      summary: Create an insurance quote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQuoteRequest'
+      responses:
+        '201':
+          description: Quote created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+  /v1/quotes/{quoteId}:
+    get:
+      operationId: getQuote
+      summary: Fetch a quote
+      parameters:
+        - name: quoteId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Quote found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+        '404':
+          description: Quote not found
+  /v1/policies:
+    post:
+      operationId: bindPolicy
+      summary: Bind a policy (creates and underwrites it via the Policy API)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BindPolicyRequest'
+      responses:
+        '201':
+          description: >-
+            Policy bound. Created via POST /v1/policies and underwritten via
+            POST /v1/policies/{policyId}/underwrite on the internal Policy API.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+  /v1/policies/{policyId}:
+    get:
+      operationId: getPolicy
+      summary: Fetch a bound policy from the Policy API
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: >-
+            Policy found. Retrieved via GET /v1/policies/{policyId} on the
+            internal Policy API.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+        '404':
+          description: Policy not found
+  /v1/policies/{policyId}/pay:
+    post:
+      operationId: payPolicy
+      summary: Pay the policy premium via the Payment API
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayRequest'
+      responses:
+        '200':
+          description: >-
+            Premium charged via POST /v1/payments/charge on the internal Payment
+            API.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+  /v1/claims:
+    post:
+      operationId: createClaim
+      summary: File an insurance claim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClaimRequest'
+      responses:
+        '201':
+          description: Claim filed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+  /v1/claims/{claimId}:
+    get:
+      operationId: getClaim
+      summary: Fetch a claim
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Claim found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '404':
+          description: Claim not found
+  /v1/customers/{customerId}:
+    get:
+      operationId: getCustomer
+      summary: Fetch a customer
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Customer found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '404':
+          description: Customer not found
+  /v1/payments/{paymentId}:
+    get:
+      operationId: getPayment
+      summary: Fetch payment status from the Payment API
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: >-
+            Payment found. Retrieved via GET /v1/payments/{paymentId} on the
+            internal Payment API.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '404':
+          description: Payment not found
+  /v1/payments/{paymentId}/receipt:
+    get:
+      operationId: getPaymentReceipt
+      summary: Fetch a payment receipt from the Payment API
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: >-
+            Receipt found. Retrieved via GET /v1/payments/{paymentId}/receipt on
+            the internal Payment API.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receipt'
+        '404':
+          description: Payment not found
+components:
+  schemas:
+    CreateQuoteRequest:
+      type: object
+      required:
+        - customerId
+        - productType
+        - coverageAmountCents
+        - termMonths
+      properties:
+        customerId:
+          type: string
+        productType:
+          type: string
+        coverageAmountCents:
+          type: integer
+        termMonths:
+          type: integer
+    Quote:
+      type: object
+      properties:
+        id:
+          type: string
+        customerId:
+          type: string
+        productType:
+          type: string
+        premiumCents:
+          type: integer
+        status:
+          type: string
+    BindPolicyRequest:
+      type: object
+      required:
+        - quoteId
+        - customerId
+        - paymentMethodId
+      properties:
+        quoteId:
+          type: string
+        customerId:
+          type: string
+        paymentMethodId:
+          type: string
+    Policy:
+      type: object
+      properties:
+        id:
+          type: string
+        quoteId:
+          type: string
+        customerId:
+          type: string
+        status:
+          type: string
+        premiumCents:
+          type: integer
+    PayRequest:
+      type: object
+      required:
+        - paymentMethodId
+      properties:
+        paymentMethodId:
+          type: string
+    CreateClaimRequest:
+      type: object
+      required:
+        - policyId
+        - description
+        - amountCents
+      properties:
+        policyId:
+          type: string
+        description:
+          type: string
+        amountCents:
+          type: integer
+    Claim:
+      type: object
+      properties:
+        id:
+          type: string
+        policyId:
+          type: string
+        status:
+          type: string
+        amountCents:
+          type: integer
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        policyId:
+          type: string
+        status:
+          type: string
+        amountCents:
+          type: integer
+        currency:
+          type: string
+        createdAt:
+          type: string
+    Receipt:
+      type: object
+      properties:
+        paymentId:
+          type: string
+        text:
+          type: string
