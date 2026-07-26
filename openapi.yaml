@@ -107,7 +107,8 @@ paths:
         '200':
           description: >-
             Premium charged via POST /v1/payments/charge on the internal Payment
-            API.
+            API. When status is "requires_action", the nextAction object must be
+            forwarded to the end-client to complete SCA / 3DS authentication.
           content:
             application/json:
               schema:
@@ -306,6 +307,19 @@ components:
           type: string
         email:
           type: string
+    PaymentNextAction:
+      type: object
+      description: >-
+        Present when Payment status is "requires_action". Contains the Stripe
+        client secret and redirect URL needed for the end-client to complete
+        SCA / 3DS authentication.
+      properties:
+        type:
+          type: string
+        clientSecret:
+          type: string
+        redirectUrl:
+          type: string
     Payment:
       type: object
       properties:
@@ -315,12 +329,20 @@ components:
           type: string
         status:
           type: string
+          description: >-
+            May be "requires_action" when SCA / 3DS authentication is needed.
+            In that case inspect the nextAction field.
         amountCents:
           type: integer
         currency:
           type: string
         createdAt:
           type: string
+        nextAction:
+          $ref: '#/components/schemas/PaymentNextAction'
+          description: >-
+            Populated when status is "requires_action". Must be forwarded to
+            the end-client to complete authentication.
     Receipt:
       type: object
       properties:
