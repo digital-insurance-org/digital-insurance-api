@@ -16,6 +16,17 @@ export interface ChargePaymentBody {
   amountCents?: number;
 }
 
+/**
+ * Present when the Payment API returns status "requires_action".
+ * Contains the Stripe client secret and redirect URL needed for the
+ * end-client to complete SCA / 3DS authentication.
+ */
+export interface PaymentNextAction {
+  type: string;
+  clientSecret: string;
+  redirectUrl?: string;
+}
+
 export interface PaymentResource {
   id: string;
   policyId: string;
@@ -24,6 +35,8 @@ export interface PaymentResource {
   currency: string;
   riskSummary?: string;
   createdAt: string;
+  /** Populated by the Payment API when status is "requires_action". */
+  nextAction?: PaymentNextAction;
 }
 
 export interface ReceiptResource {
@@ -34,6 +47,10 @@ export interface ReceiptResource {
 /**
  * Charge a premium payment via the Payment API.
  * POST {PAYMENT_API_URL}/v1/payments/charge
+ *
+ * When the returned PaymentResource has status "requires_action", callers
+ * must forward the nextAction details to the end-client so it can complete
+ * SCA / 3DS authentication before the payment is confirmed.
  */
 export async function chargePayment(
   body: ChargePaymentBody,
