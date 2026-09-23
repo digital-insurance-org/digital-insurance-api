@@ -5,8 +5,10 @@ info:
   description: >-
     Customer-facing API for the Digital Insurance platform. Handles quotes,
     claims, and customers; binds and prices policies through the internal Policy
-    API; and charges premiums and fetches payment receipts through the internal
-    Payment API.
+    API; charges premiums and fetches payment receipts through the internal
+    Payment API; and reads a customer's loss history from the internal Claims
+    API. Support replies are drafted with OpenAI gpt-4o-mini through the Vercel
+    AI SDK.
 servers:
   - url: https://api.digitalinsurance.dev
     description: Production
@@ -167,6 +169,61 @@ paths:
                 $ref: '#/components/schemas/Customer'
         '404':
           description: Customer not found
+  /v1/customers/{customerId}/claims:
+    get:
+      operationId: getCustomerClaims
+      summary: List a customer's claims from the Claims API
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: >-
+            The customer's claims. One call to GET /v1/claims?policyNumber= on
+            the internal Claims API is made per policy the customer holds, and
+            the results are merged.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClaimSummary'
+        '404':
+          description: Customer not found
+  /v1/customers/{customerId}/messages/draft-reply:
+    post:
+      operationId: draftCustomerReply
+      summary: Draft a support reply to a customer message
+      description: >-
+        Drafts a reply for a support agent to edit and send. The draft is
+        generated with OpenAI gpt-4o-mini through the Vercel AI SDK; the model
+        is given the customer's message and a short account summary, and the
+        customer's open claim count is read from the internal Claims API. The
+        draft is never delivered to the customer automatically.
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DraftReplyRequest'
+      responses:
+        '200':
+          description: The drafted reply
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReplyDraft'
+        '404':
+          description: Customer not found
   /v1/payments/{paymentId}:
     get:
       operationId: getPayment
@@ -306,6 +363,50 @@ components:
           type: string
         email:
           type: string
+        policyNumbers:
+          type: array
+          items:
+            type: string
+    ClaimSummary:
+      type: object
+      description: A claim as returned by the internal Claims API.
+      properties:
+        claimId:
+          type: string
+        policyNumber:
+          type: string
+        status:
+          type: string
+        lossType:
+          type: string
+        amountCents:
+          type: integer
+        incidentDate:
+          type: string
+        description:
+          type: string
+    DraftReplyRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          maxLength: 4000
+          description: The customer's message, verbatim.
+        topic:
+          type: string
+          maxLength: 80
+          description: Optional topic the support agent already tagged.
+    ReplyDraft:
+      type: object
+      properties:
+        model:
+          type: string
+          example: gpt-4o-mini
+        body:
+          type: string
+          description: The drafted reply body, for an agent to edit and send.
     Payment:
       type: object
       properties:
