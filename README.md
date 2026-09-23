@@ -63,7 +63,7 @@ match the controller routes exactly.
 | `POLICY_API_URL`  | `https://policy.digitalinsurance.dev` | Base URL of the internal Policy API  |
 | `PAYMENT_API_URL` | `https://payment.digitalinsurance.dev`| Base URL of the internal Payment API |
 | `CLAIMS_API_URL`  | `https://claims.digitalinsurance.dev` | Base URL of the internal Claims API   |
-| `OPENAI_BASE_URL` | `https://gateway.apisynq.dev/v1/openai` | Where the OpenAI client sends its calls |
+| `OPENAI_BASE_URL` | `https://governance-api.apisynq.com/v1/ai-gw/openai/v1` | Where the OpenAI client sends its calls |
 | `OPENAI_API_KEY`  | —                                     | Key for the reply draft helper        |
 
 Copy `.env.example` to `.env` and adjust as needed.
